@@ -1,20 +1,28 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import RichTextEditor from "@/components/RichTextEditor";
+import ComposedInput from "@/components/ComposedInput";
 import { useRouter } from "next/navigation";
+import { parsePraises, stringifyPraises, type PraiseCard } from "@/lib/praises";
+
+const EVENT_TYPES = ["주일 예배", "금요 기도회"] as const;
 
 type BulletinForm = {
   date: string;
+  eventType: string;
   time: string;
   sermonTitleMain: string;
+  sermonTitleMainColor: string;
   sermonTitleSub: string;
+  sermonTitleSubColor: string;
   praises: string;
   prayers: string;
   passage: string;
   sermonDescription: string;
-  commitment: string;
   announcements: string;
+  introBackgroundUrl: string;
+  youtubeUrl: string;
 };
 
 const defaultPrayers =
@@ -22,18 +30,150 @@ const defaultPrayers =
 
 const emptyForm: BulletinForm = {
   date: "",
+  eventType: "주일 예배",
   time: "11:00",
   sermonTitleMain: "",
+  sermonTitleMainColor: "#ffffff",
   sermonTitleSub: "",
+  sermonTitleSubColor: "#ffffff",
   praises: "",
   prayers: defaultPrayers,
   passage: "",
   sermonDescription: "",
-  commitment: "",
   announcements: "",
+  introBackgroundUrl: "",
+  youtubeUrl: "",
 };
 
-type BulletinListItem = { date: string; sermonTitleMain: string };
+type BulletinListItem = { date: string; sermonTitleMain: string; eventType?: string };
+
+function PraisesCardEditor({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const cards = parsePraises(value);
+  const fileInputRefs = useRef({} as Record<number, HTMLInputElement | null>);
+
+  const setCards = (next: PraiseCard[]) => {
+    onChange(stringifyPraises(next));
+  };
+
+  const addCard = () => {
+    setCards([...cards, { title: "", imageUrl: "" }]);
+  };
+
+  const updateCard = (index: number, patch: Partial<PraiseCard>) => {
+    const next = cards.map((c, i) => (i === index ? { ...c, ...patch } : c));
+    setCards(next);
+  };
+
+  const removeCard = (index: number) => {
+    const removed = cards[index];
+    if (removed?.imageUrl && (removed.imageUrl.startsWith("http") || removed.imageUrl.startsWith("/uploads"))) {
+      fetch("/api/upload", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url: removed.imageUrl }) }).catch(() => {});
+    }
+    setCards(cards.filter((_, i) => i !== index));
+  };
+
+  const removeImage = (index: number) => {
+    const card = cards[index];
+    if (card?.imageUrl && (card.imageUrl.startsWith("http") || card.imageUrl.startsWith("/uploads"))) {
+      fetch("/api/upload", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url: card.imageUrl }) }).catch(() => {});
+    }
+    updateCard(index, { imageUrl: "" });
+  };
+
+  const handleFile = async (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const prevUrl = cards[index]?.imageUrl;
+    if (prevUrl && (prevUrl.startsWith("http") || prevUrl.startsWith("/uploads"))) {
+      fetch("/api/upload", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url: prevUrl }) }).catch(() => {});
+    }
+    const formData = new FormData();
+    formData.set("file", file);
+    try {
+      const res = await fetch("/api/upload", { method: "POST", body: formData });
+      const data = await res.json();
+      if (data?.url) updateCard(index, { imageUrl: data.url });
+    } catch {
+      // ignore
+    }
+    e.target.value = "";
+  };
+
+  return (
+    <div className="space-y-2">
+      {cards.map((card, index) => (
+        <div
+          key={index}
+          className="rounded-xl border border-[#e5d6c0] bg-[#fbf5eb]/80 p-3 space-y-2"
+        >
+          <div className="flex gap-2 items-start">
+            <ComposedInput
+              type="text"
+              value={card.title}
+              onChange={(v) => updateCard(index, { title: v })}
+              placeholder="찬양 제목"
+              className="flex-1 rounded-md border border-[#e5d6c0] bg-white/90 px-3 py-2 text-[13px]"
+            />
+            <button
+              type="button"
+              onClick={() => removeCard(index)}
+              className="text-red-600 text-[12px] px-2 py-1 shrink-0"
+            >
+              삭제
+            </button>
+          </div>
+          <div className="flex items-center gap-2">
+            <input
+              ref={(el) => { if (fileInputRefs.current) fileInputRefs.current[index] = el; }}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => handleFile(index, e)}
+            />
+            <button
+              type="button"
+              onClick={() => fileInputRefs.current[index]?.click()}
+              className="text-[12px] px-3 py-1.5 rounded-md border border-[#c49a6c] text-[#8b6919] hover:bg-[#c49a6c]/10"
+            >
+              {card.imageUrl ? "악보 이미지 변경" : "악보 이미지 올리기"}
+            </button>
+            {card.imageUrl && (
+              <>
+                <a
+                  href={card.imageUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[11px] text-foreground/60 underline"
+                >
+                  미리보기
+                </a>
+                <button
+                  type="button"
+                  onClick={() => removeImage(index)}
+                  className="text-[11px] text-red-600 underline"
+                >
+                  이미지 제거
+                </button>
+              </>
+            )}
+          </div>
+          {card.imageUrl && (
+            <div className="h-16 rounded overflow-hidden bg-white/50 border border-[#e5d6c0]">
+              <img src={card.imageUrl} alt="" className="h-full w-auto object-contain" />
+            </div>
+          )}
+        </div>
+      ))}
+      <button
+        type="button"
+        onClick={addCard}
+        className="w-full py-2 rounded-lg border border-dashed border-[#e5d6c0] text-[12px] text-foreground/70 hover:bg-[#fbf5eb]/50"
+      >
+        + 찬양 추가
+      </button>
+    </div>
+  );
+}
 
 export default function AdminDashboardPage() {
   const router = useRouter();
@@ -78,15 +218,19 @@ export default function AdminDashboardPage() {
       .then((b) => {
         setForm({
           date: b.date,
+          eventType: b.eventType ?? "주일 예배",
           time: b.time ?? "11:00",
           sermonTitleMain: b.sermonTitleMain ?? "",
+          sermonTitleMainColor: b.sermonTitleMainColor ?? "#ffffff",
           sermonTitleSub: b.sermonTitleSub ?? "",
+          sermonTitleSubColor: b.sermonTitleSubColor ?? "#ffffff",
           praises: b.praises ?? "",
           prayers: b.prayers ?? defaultPrayers,
           passage: b.passage ?? "",
           sermonDescription: b.sermonDescription ?? "",
-          commitment: b.commitment ?? "",
           announcements: b.announcements ?? "",
+          introBackgroundUrl: b.introBackgroundUrl ?? "",
+          youtubeUrl: b.youtubeUrl ?? "",
         });
       })
       .catch(() => {
@@ -128,8 +272,8 @@ export default function AdminDashboardPage() {
       setMessage("저장되었습니다.");
       setDateList((prev) => {
         const has = prev.some((x) => x.date === form.date);
-        if (has) return prev.map((x) => (x.date === form.date ? { date: data.date, sermonTitleMain: data.sermonTitleMain ?? "" } : x));
-        return [{ date: data.date, sermonTitleMain: data.sermonTitleMain ?? "" }, ...prev];
+        if (has) return prev.map((x) => (x.date === form.date ? { date: data.date, sermonTitleMain: data.sermonTitleMain ?? "", eventType: data.eventType ?? "주일 예배" } : x));
+        return [{ date: data.date, sermonTitleMain: data.sermonTitleMain ?? "", eventType: data.eventType ?? "주일 예배" }, ...prev];
       });
     } catch {
       setMessage("저장 중 문제가 발생했습니다.");
@@ -237,6 +381,18 @@ export default function AdminDashboardPage() {
               />
             </div>
             <div>
+              <label className="block mb-1 text-[12px] text-foreground/70">예배 종류</label>
+              <select
+                value={form.eventType}
+                onChange={(e) => setForm((prev) => ({ ...prev, eventType: e.target.value }))}
+                className="w-full rounded-md border border-[#e5d6c0] bg-white/90 px-3 py-2 text-[13px] outline-none focus:ring-2 focus:ring-[#c49a6c]/60"
+              >
+                {EVENT_TYPES.map((t) => (
+                  <option key={t} value={t}>{t}</option>
+                ))}
+              </select>
+            </div>
+            <div>
               <label className="block mb-1 text-[12px] text-foreground/70">예배 시간</label>
               <input
                 type="time"
@@ -250,93 +406,161 @@ export default function AdminDashboardPage() {
           <section className="grid grid-cols-2 gap-3 text-[13px]">
             <div>
               <label className="block mb-1 text-[12px] text-foreground/70">설교 제목 (메인)</label>
-              <input
-                type="text"
-                value={form.sermonTitleMain}
-                onChange={handleChange("sermonTitleMain")}
-                className="w-full rounded-md border border-[#e5d6c0] bg-white/90 px-3 py-2 text-[13px] outline-none focus:ring-2 focus:ring-[#c49a6c]/60"
-              />
+              <div className="flex gap-2 items-center">
+                <ComposedInput
+                  type="text"
+                  value={form.sermonTitleMain}
+                  onChange={(v) => setForm((prev) => ({ ...prev, sermonTitleMain: v }))}
+                  className="flex-1 rounded-md border border-[#e5d6c0] bg-white/90 px-3 py-2 text-[13px] outline-none focus:ring-2 focus:ring-[#c49a6c]/60"
+                />
+                <label className="flex items-center gap-1 shrink-0" title="제목 글자 색">
+                  <input
+                    type="color"
+                    value={form.sermonTitleMainColor}
+                    onChange={(e) => setForm((prev) => ({ ...prev, sermonTitleMainColor: e.target.value }))}
+                    className="w-8 h-7 rounded border border-[#e0d0b8] cursor-pointer p-0 bg-white"
+                  />
+                </label>
+              </div>
             </div>
             <div>
               <label className="block mb-1 text-[12px] text-foreground/70">설교 제목 (부제)</label>
-              <input
-                type="text"
-                value={form.sermonTitleSub}
-                onChange={handleChange("sermonTitleSub")}
-                className="w-full rounded-md border border-[#e5d6c0] bg-white/90 px-3 py-2 text-[13px] outline-none focus:ring-2 focus:ring-[#c49a6c]/60"
-              />
+              <div className="flex gap-2 items-center">
+                <ComposedInput
+                  type="text"
+                  value={form.sermonTitleSub}
+                  onChange={(v) => setForm((prev) => ({ ...prev, sermonTitleSub: v }))}
+                  className="flex-1 rounded-md border border-[#e5d6c0] bg-white/90 px-3 py-2 text-[13px] outline-none focus:ring-2 focus:ring-[#c49a6c]/60"
+                />
+                <label className="flex items-center gap-1 shrink-0" title="부제 글자 색">
+                  <input
+                    type="color"
+                    value={form.sermonTitleSubColor}
+                    onChange={(e) => setForm((prev) => ({ ...prev, sermonTitleSubColor: e.target.value }))}
+                    className="w-8 h-7 rounded border border-[#e0d0b8] cursor-pointer p-0 bg-white"
+                  />
+                </label>
+              </div>
             </div>
           </section>
 
           <section className="grid grid-cols-2 gap-3 text-[13px]">
-            <div>
-              <RichTextEditor
-                label="찬양 목록 (한 줄에 한 곡)"
+            <div className="space-y-2">
+              <label className="block text-[12px] text-foreground/70">찬양 (카드 + 악보 이미지)</label>
+              <PraisesCardEditor
                 value={form.praises}
-                onChange={(v) => handleRichChange("praises", v)}
-                placeholder={"# 찬양하세\n# 풀은 마르고 꽃은 시드나\n..."}
-                minHeight={120}
+                onChange={(v) => setForm((prev) => ({ ...prev, praises: v }))}
               />
             </div>
             <div>
               <RichTextEditor
-                label="기도 (예: 주기도문)"
+                label="주기도문"
                 value={form.prayers}
-                onChange={(v) => handleRichChange("prayers", v)}
+                onChange={(v) => setForm((prev) => ({ ...prev, prayers: v }))}
+                minHeight={140}
+              />
+            </div>
+          </section>
+
+          <section className="grid grid-cols-2 gap-3 text-[13px]">
+            <div>
+              <RichTextEditor
+                label="말씀 (본문)"
+                value={form.passage}
+                onChange={(v) => setForm((prev) => ({ ...prev, passage: v }))}
+                minHeight={120}
+              />
+            </div>
+            <div>
+              <RichTextEditor
+                label="나눔 질문"
+                value={form.sermonDescription}
+                onChange={(v) => setForm((prev) => ({ ...prev, sermonDescription: v }))}
                 minHeight={120}
               />
             </div>
           </section>
 
-          <section className="grid grid-cols-2 gap-3 text-[13px]">
-            <div>
-              <label className="block mb-1 text-[12px] text-foreground/70">본문(BIBLE PASSAGE)</label>
-              <input
-                type="text"
-                value={form.passage}
-                onChange={handleChange("passage")}
-                className="w-full rounded-md border border-[#e5d6c0] bg-white/90 px-3 py-2 text-[13px] outline-none focus:ring-2 focus:ring-[#c49a6c]/60"
-              />
-            </div>
-            <div>
-              <RichTextEditor
-                label="설교 설명"
-                value={form.sermonDescription}
-                onChange={(v) => handleRichChange("sermonDescription", v)}
-                minHeight={100}
-              />
-            </div>
+          <section className="text-[13px]">
+            <RichTextEditor
+              label="광고"
+              value={form.announcements}
+              onChange={(v) => setForm((prev) => ({ ...prev, announcements: v }))}
+              placeholder="1. 소그룹 모임 안내 ...&#10;2. 이 달의 추천도서 ..."
+              minHeight={160}
+            />
           </section>
 
-          <section className="grid grid-cols-2 gap-3 text-[13px]">
-            <div>
-              <RichTextEditor
-                label="헌신(COMMITMENT) 내용"
-                value={form.commitment}
-                onChange={(v) => handleRichChange("commitment", v)}
-                minHeight={100}
-              />
-            </div>
-            <div>
-              <label className="block mb-1 text-[12px] text-foreground/70">
-                광고(ANNOUNCEMENTS) 텍스트
-              </label>
-              <textarea
-                rows={6}
-                value={form.announcements}
-                onChange={handleChange("announcements")}
-                placeholder={"1. 소그룹 모임 안내 ...\n2. 이 달의 추천도서 ..."}
-                className="w-full rounded-md border border-[#e5d6c0] bg-white/90 px-3 py-2 text-[13px] outline-none focus:ring-2 focus:ring-[#c49a6c]/60 whitespace-pre-wrap"
-              />
-            </div>
+          <section className="space-y-2 text-[13px]">
+            <label className="block text-[12px] text-foreground/70 font-medium">인트로 유튜브 링크</label>
+            <p className="text-[12px] text-foreground/60">인트로 화면 우측 상단 유튜브 버튼을 눌렀을 때 이동할 주소를 입력하세요. 비워두면 버튼이 표시되지 않습니다.</p>
+            <input
+              type="url"
+              value={form.youtubeUrl}
+              onChange={(e) => setForm((prev) => ({ ...prev, youtubeUrl: e.target.value }))}
+              placeholder="https://www.youtube.com/..."
+              className="w-full rounded-md border border-[#e5d6c0] bg-white/90 px-3 py-2 text-[13px] outline-none focus:ring-2 focus:ring-[#c49a6c]/60"
+            />
           </section>
 
-          <section className="text-[12px] text-foreground/60">
-            <p className="font-medium mb-1">이미지 관리 (향후 구현 예정)</p>
-            <p>
-              인트로/배경, 찬양 악보 이미지는 다음 단계에서 업로드 기능과 함께 연결할 예정입니다.
-              현재는 텍스트만 관리됩니다.
-            </p>
+          <section className="space-y-2 text-[13px]">
+            <label className="block text-[12px] text-foreground/70 font-medium">배경화면 이미지</label>
+            <p className="text-[12px] text-foreground/60">인트로 화면에 표시할 배경 이미지를 선택하세요. 비워두면 기본 이미지를 사용합니다.</p>
+            <div className="flex flex-wrap items-end gap-3">
+              <div className="relative">
+                <input
+                  type="file"
+                  accept="image/*"
+                  id="intro-bg-file"
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const formData = new FormData();
+                    formData.set("file", file);
+                    try {
+                      const res = await fetch("/api/upload", { method: "POST", body: formData });
+                      const data = await res.json();
+                      if (data?.url) {
+                        const prev = form.introBackgroundUrl;
+                        if (prev && (prev.startsWith("http") || prev.startsWith("/uploads"))) {
+                          fetch("/api/upload", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url: prev }) }).catch(() => {});
+                        }
+                        setForm((prev) => ({ ...prev, introBackgroundUrl: data.url }));
+                      }
+                    } catch {
+                      // ignore
+                    }
+                    e.target.value = "";
+                  }}
+                />
+                <label
+                  htmlFor="intro-bg-file"
+                  className="inline-block rounded-md border border-[#c49a6c] bg-[#fbf5eb] px-4 py-2 text-[13px] text-foreground/90 cursor-pointer hover:bg-[#f5ebe0]"
+                >
+                  이미지 선택
+                </label>
+              </div>
+              {form.introBackgroundUrl ? (
+                <>
+                  <div className="rounded-lg border border-[#e5d6c0] overflow-hidden w-24 h-14 bg-[#fbf5eb] shrink-0">
+                    <img src={form.introBackgroundUrl} alt="배경 미리보기" className="w-full h-full object-cover" />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (form.introBackgroundUrl.startsWith("http") || form.introBackgroundUrl.startsWith("/uploads")) {
+                        fetch("/api/upload", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url: form.introBackgroundUrl }) }).catch(() => {});
+                      }
+                      setForm((prev) => ({ ...prev, introBackgroundUrl: "" }));
+                    }}
+                    className="text-[12px] text-red-600 underline"
+                  >
+                    제거
+                  </button>
+                </>
+              ) : null}
+            </div>
           </section>
 
           <div className="pt-2 flex items-center justify-between gap-3 text-[12px] flex-wrap">

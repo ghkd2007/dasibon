@@ -43,10 +43,31 @@ npx prisma migrate deploy
 
 Supabase **Table Editor** 에서 `Bulletin` 테이블에 데이터가 쌓이는지 확인하면 됩니다.
 
+## 5. 파일 업로드 (악보 이미지) – 웹에서 동작
+
+로컬 `public/uploads` 는 Vercel에서 쓸 수 없으므로 **Supabase Storage**를 사용합니다.
+
+1. **Supabase 대시보드** → **Storage** → **New bucket**
+   - Name: `uploads`
+   - **Public bucket** 체크 (읽기 공개)
+   - Create bucket
+
+2. **환경 변수 추가**
+   - Supabase **Settings** → **API** → **Project API keys** 에서 **service_role** (secret) 복사.
+   - 로컬 `.env` 및 Vercel **Environment Variables** 에 추가:
+   - Name: `SUPABASE_SERVICE_ROLE_KEY`
+   - Value: 복사한 service_role 키 (절대 클라이언트/프론트에 노출하지 말 것)
+
+3. 동작
+   - 업로드: `POST /api/upload` → Supabase Storage 버킷 `uploads`에 저장 후 **공개 URL** 반환.
+   - 삭제: 관리자에서 이미지 제거/카드 삭제 시 `DELETE /api/upload` 로 Storage에서도 삭제.
+   - `SUPABASE_SERVICE_ROLE_KEY` 가 없으면 로컬에서는 `public/uploads`에 저장(동작만 하고, 배포 환경에서는 위 설정 필요).
+
 ## 요약
 
 | 항목        | 값 |
 |------------|-----|
 | DB         | Supabase (PostgreSQL) |
 | 호스팅     | Vercel |
-| 환경 변수  | `DATABASE_URL` = Supabase Connection string (URI) |
+| 파일 저장  | Supabase Storage 버킷 `uploads` (공개) |
+| 환경 변수  | `DATABASE_URL`, `DIRECT_URL`, `SUPABASE_SERVICE_ROLE_KEY`(업로드용) |

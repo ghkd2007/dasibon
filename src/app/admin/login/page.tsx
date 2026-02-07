@@ -64,9 +64,6 @@ export default function AdminLoginPage() {
             로그인
           </button>
         </form>
-        <p className="mt-4 text-[11px] text-center text-foreground/50">
-          테스트용 계정: <span className="font-medium">admin / dasibon123</span>
-        </p>
       </div>
     </main>
   );

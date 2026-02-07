@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type Props = {
   label: string;
@@ -18,15 +18,32 @@ export default function RichTextEditor({
   minHeight = 120,
 }: Props) {
   const ref = useRef<HTMLDivElement | null>(null);
+  const [isComposing, setIsComposing] = useState(false);
+  const lastValueRef = useRef(value);
 
   useEffect(() => {
-    if (!ref.current) return;
+    if (!ref.current || isComposing) return;
+    if (lastValueRef.current === value) return;
+    lastValueRef.current = value;
     ref.current.innerHTML = value || "";
-  }, [value]);
+  }, [value, isComposing]);
 
   const handleInput = () => {
     if (!ref.current) return;
-    onChange(ref.current.innerHTML);
+    if (isComposing) return;
+    const html = ref.current.innerHTML;
+    lastValueRef.current = html;
+    onChange(html);
+  };
+
+  const handleCompositionStart = () => setIsComposing(true);
+  const handleCompositionEnd = (e: React.CompositionEvent<HTMLDivElement>) => {
+    setIsComposing(false);
+    if (ref.current) {
+      const html = ref.current.innerHTML;
+      lastValueRef.current = html;
+      onChange(html);
+    }
   };
 
   const exec = (command: string, valueArg?: string) => {
@@ -51,7 +68,7 @@ export default function RichTextEditor({
       <label className="block text-[12px] text-foreground/70 mb-0.5">
         {label}
       </label>
-      <div className="flex items-center gap-1 text-[11px] text-foreground/60 mb-1">
+      <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-foreground/60 mb-1">
         <button
           type="button"
           className="px-2 py-[1px] rounded-full border border-[#e0d0b8] bg-white/90 text-[11px] font-semibold"
@@ -101,6 +118,15 @@ export default function RichTextEditor({
         >
           ➡
         </button>
+        <label className="flex items-center gap-1 shrink-0 cursor-pointer" title="글자 색상">
+          <span className="text-[10px] text-foreground/50">색상</span>
+          <input
+            type="color"
+            className="w-6 h-5 rounded border border-[#e0d0b8] cursor-pointer p-0 bg-white"
+            defaultValue="#1a1a1a"
+            onChange={(e) => exec("foreColor", e.target.value)}
+          />
+        </label>
         <button
           type="button"
           className="px-2 py-[1px] rounded-full border border-[#e0d0b8] bg-white/90 text-[10px]"
@@ -130,6 +156,8 @@ export default function RichTextEditor({
         contentEditable
         data-placeholder={placeholder}
         onInput={handleInput}
+        onCompositionStart={handleCompositionStart}
+        onCompositionEnd={handleCompositionEnd}
       />
     </div>
   );

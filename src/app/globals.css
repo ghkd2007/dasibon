@@ -28,3 +28,21 @@ body {
 .button-ghost {
   @apply text-xs text-foreground/60 underline underline-offset-4;
 }
+
+/* 로딩 ... 점이 하나씩 순서대로 나타남 */
+@keyframes loading-dot-1 {
+  0% { opacity: 0.2; }
+  10%, 100% { opacity: 1; }
+}
+@keyframes loading-dot-2 {
+  0%, 30% { opacity: 0.2; }
+  40%, 100% { opacity: 1; }
+}
+@keyframes loading-dot-3 {
+  0%, 60% { opacity: 0.2; }
+  70%, 100% { opacity: 1; }
+}
+
+.loading-dot-1 { animation: loading-dot-1 1.8s ease-out infinite; }
+.loading-dot-2 { animation: loading-dot-2 1.8s ease-out infinite; }
+.loading-dot-3 { animation: loading-dot-3 1.8s ease-out infinite; }

@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
 
     const list = await prisma.bulletin.findMany({
       orderBy: { date: "desc" },
-      select: { date: true, sermonTitleMain: true },
+      select: { date: true, sermonTitleMain: true, eventType: true },
     });
     return NextResponse.json(list);
   } catch (e) {
@@ -40,15 +40,20 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const {
       date,
+      eventType,
       time,
       sermonTitleMain,
+      sermonTitleMainColor,
       sermonTitleSub,
+      sermonTitleSubColor,
       praises,
       prayers,
       passage,
       sermonDescription,
       commitment,
       announcements,
+      introBackgroundUrl,
+      youtubeUrl,
     } = body;
 
     if (!date || typeof date !== "string") {
@@ -59,15 +64,20 @@ export async function POST(request: NextRequest) {
     }
 
     const data = {
+      eventType: eventType ?? "주일 예배",
       time: time ?? "11:00",
       sermonTitleMain: sermonTitleMain ?? "",
+      sermonTitleMainColor: sermonTitleMainColor ?? null,
       sermonTitleSub: sermonTitleSub ?? "",
+      sermonTitleSubColor: sermonTitleSubColor ?? null,
       praises: praises ?? "",
       prayers: prayers ?? "",
       passage: passage ?? "",
       sermonDescription: sermonDescription ?? "",
       commitment: commitment ?? "",
       announcements: announcements ?? "",
+      introBackgroundUrl: introBackgroundUrl ?? null,
+      youtubeUrl: youtubeUrl ?? null,
     };
 
     const bulletin = await prisma.bulletin.upsert({

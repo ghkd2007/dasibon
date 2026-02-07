@@ -13,15 +13,20 @@ datasource db {
 model Bulletin {
   id                String   @id @default(cuid())
   date              String   @unique // YYYY-MM-DD
+  eventType         String   @default("주일 예배") // 주일 예배 | 금요 기도회
   time              String   @default("11:00")
   sermonTitleMain   String   @default("")
+  sermonTitleMainColor String?  // 설교 제목 글자 색 (hex)
   sermonTitleSub    String   @default("")
+  sermonTitleSubColor String?  // 설교 부제 글자 색 (hex)
   praises           String   @default("")
   prayers           String   @default("")
   passage           String   @default("")
   sermonDescription String   @default("")
   commitment        String   @default("")
   announcements     String   @default("")
+  introBackgroundUrl String?  // 인트로 배경 이미지 URL
+  youtubeUrl         String?  // 인트로 유튜브 버튼 링크
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 }
