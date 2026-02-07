@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 
 type IntroStage = "intro" | "order";
 
@@ -30,7 +30,7 @@ function formatDateLabel(dateStr: string, time: string) {
   return `${y}년 ${Number(m)}월 ${Number(d)}일 · ${timeLabel}`;
 }
 
-export default function Home() {
+function HomeContent() {
   const searchParams = useSearchParams();
   const dateParam = searchParams.get("date");
   const [stage, setStage] = useState<IntroStage>("intro");
@@ -67,6 +67,14 @@ export default function Home() {
         <WorshipOrderScreen bulletin={bulletin} />
       )}
     </main>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={<main className="min-h-screen bg-background flex items-center justify-center"><div className="text-foreground/60">로딩 중...</div></main>}>
+      <HomeContent />
+    </Suspense>
   );
 }
 
