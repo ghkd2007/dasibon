@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { parsePraises } from "@/lib/praises";
 
 type IntroStage = "intro" | "order";
@@ -50,12 +50,12 @@ function IntroScreenLoading({ onGoOrder }: { onGoOrder: () => void }) {
 
   return (
     <div
-      className="relative flex h-screen w-full items-center justify-center px-6 py-10 bg-cover bg-center"
+      className="relative flex min-h-[100dvh] h-[100dvh] max-h-[100dvh] w-full items-center justify-center px-4 py-4 sm:px-6 sm:py-10 bg-cover bg-center overflow-hidden"
       style={{ backgroundImage: `url(${backgroundImage})` }}
       onClick={onGoOrder}
     >
       <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/15 to-[#f7f1e6]/95 pointer-events-none" />
-      <div className="relative z-10 h-full w-full max-w-md overflow-hidden rounded-3xl border border-[#f5e1c4] shadow-lg">
+      <div className="relative z-10 h-full max-h-full w-full max-w-md overflow-hidden rounded-3xl border border-[#f5e1c4] shadow-lg flex flex-col min-h-0">
         <div className="absolute right-4 top-4 z-20">
           <button
             type="button"
@@ -70,8 +70,8 @@ function IntroScreenLoading({ onGoOrder }: { onGoOrder: () => void }) {
           </button>
         </div>
         <div className="absolute inset-0 bg-black/25 backdrop-blur-[2px] pointer-events-none" />
-        <div className="relative flex h-full flex-col justify-between px-7 py-8">
-          <header className="text-center space-y-1">
+        <div className="relative flex flex-1 min-h-0 flex-col justify-between px-5 py-6 sm:px-7 sm:py-8">
+          <header className="text-center space-y-1 shrink-0">
             <div className="text-[11px] text-white/85">...</div>
             <div className="text-[11px] tracking-[0.22em] uppercase text-white/75">
               DASIBON WORSHIP
@@ -198,13 +198,13 @@ function IntroScreen({ onGoOrder, bulletin }: IntroScreenProps) {
 
   return (
     <div
-      className="relative flex h-screen w-full items-center justify-center px-6 py-10 bg-cover bg-center"
+      className="relative flex min-h-[100dvh] h-[100dvh] max-h-[100dvh] w-full items-center justify-center px-4 py-4 sm:px-6 sm:py-10 bg-cover bg-center overflow-hidden"
       style={{ backgroundImage: `url(${backgroundImage})` }}
       onClick={onGoOrder}
     >
       <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/15 to-[#f7f1e6]/95 pointer-events-none" />
 
-      <div className="relative z-10 h-full w-full max-w-md overflow-hidden rounded-3xl border border-[#f5e1c4] shadow-lg">
+      <div className="relative z-10 h-full max-h-full w-full max-w-md overflow-hidden rounded-3xl border border-[#f5e1c4] shadow-lg flex flex-col min-h-0">
         <div className="absolute right-4 top-4 z-20 flex items-center gap-2">
           {bulletin?.youtubeUrl ? (
             <a
@@ -234,7 +234,7 @@ function IntroScreen({ onGoOrder, bulletin }: IntroScreenProps) {
         </div>
         <div className="absolute inset-0 bg-black/25 backdrop-blur-[2px] pointer-events-none" />
 
-        <div className="relative flex h-full flex-col px-7 py-8">
+        <div className="relative flex flex-1 min-h-0 flex-col px-5 py-5 sm:px-7 sm:py-8 overflow-hidden">
           <header className="shrink-0 h-[3.5rem] flex flex-col justify-center text-center">
             <div className="text-[11px] text-white/85 leading-tight">{dateLabel}</div>
             <div className="text-[11px] tracking-[0.22em] uppercase text-white/75 leading-tight mt-0.5">
@@ -242,9 +242,9 @@ function IntroScreen({ onGoOrder, bulletin }: IntroScreenProps) {
             </div>
           </header>
 
-          <section className="shrink-0 flex-1 min-h-0 flex items-center justify-center py-0">
-            <div className="w-full max-w-xs text-center h-[11rem] flex flex-col items-center justify-center gap-4">
-              <div className="h-[6.5rem] flex items-center justify-center w-full">
+          <section className="flex-1 min-h-0 flex items-center justify-center py-0 overflow-y-auto">
+            <div className="w-full max-w-xs text-center min-h-[11rem] flex flex-col items-center justify-center gap-4 py-2">
+              <div className="min-h-[6.5rem] flex items-center justify-center w-full">
                 <h1 className="text-[28px] leading-9 font-semibold tracking-tight text-white drop-shadow-sm">
                   <span className="block" style={sermonTitleMainColor ? { color: sermonTitleMainColor } : undefined}>{sermonTitleMain}</span>
                   <span className="mt-2 block text-[20px] leading-7 font-medium text-white/95" style={sermonTitleSubColor ? { color: sermonTitleSubColor } : undefined}>
@@ -259,40 +259,36 @@ function IntroScreen({ onGoOrder, bulletin }: IntroScreenProps) {
           </section>
 
           <footer
-            className="shrink-0 mt-8 pt-5 border-t border-white/40 flex flex-row items-end justify-between gap-4 text-[11px] text-white/75 min-h-[5.5rem]"
+            className="shrink-0 mt-4 pt-4 sm:mt-8 sm:pt-5 border-t border-white/40 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 text-[11px] text-white/75 min-h-0"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center shrink-0">
+            <div className="flex justify-center sm:justify-start order-2 sm:order-1 shrink-0">
               <img
                 src="/church-logo.png"
                 alt="기독교한국침례회 다시 본 교회"
-                className="h-14 sm:h-16 w-auto max-h-[72px] object-contain opacity-95 hover:opacity-100 transition-opacity"
+                className="h-10 sm:h-14 md:h-16 w-auto max-h-[64px] sm:max-h-[72px] object-contain opacity-95 hover:opacity-100 transition-opacity"
               />
             </div>
-            <div className="flex flex-col gap-3 items-end">
-              <p className="text-right leading-snug">
+            <div className="flex flex-col gap-2 sm:gap-3 items-center sm:items-end order-1 sm:order-2 min-w-0 flex-1 sm:flex-initial">
+              <p className="text-center sm:text-right leading-snug text-white/80">
                 아래에서 날짜를 선택하면 해당 주보를 볼 수 있습니다.
               </p>
-              <div className="flex items-center justify-end gap-2 h-8 min-h-8">
+              <div className="flex items-center justify-center sm:justify-end w-full sm:w-auto min-h-8">
               {dateList.length > 0 ? (
-                <>
-                  <label htmlFor="intro-date-select" className="text-white/85 shrink-0">
-                    주보 날짜
-                  </label>
-                  <select
-                    id="intro-date-select"
-                    value={currentDate}
-                    onChange={handleDateChange}
-                    onClick={(e) => e.stopPropagation()}
-                    className="rounded-md border border-white/40 bg-black/30 px-3 py-1.5 text-white/95 text-[11px] focus:outline-none focus:ring-1 focus:ring-white/50"
-                  >
-                    {dateList.map((item) => (
-                      <option key={item.date} value={item.date} className="bg-[#2a2520] text-white">
-                        {formatBulletinOption(item.date, item.eventType)}
-                      </option>
-                    ))}
-                  </select>
-                </>
+                <select
+                  id="intro-date-select"
+                  value={currentDate}
+                  onChange={handleDateChange}
+                  onClick={(e) => e.stopPropagation()}
+                  className="w-full max-w-[220px] sm:max-w-none rounded-md border border-white/40 bg-black/30 px-3 py-2 text-white/95 text-[11px] focus:outline-none focus:ring-1 focus:ring-white/50"
+                  aria-label="주보 날짜 선택"
+                >
+                  {dateList.map((item) => (
+                    <option key={item.date} value={item.date} className="bg-[#2a2520] text-white">
+                      {formatBulletinOption(item.date, item.eventType)}
+                    </option>
+                  ))}
+                </select>
               ) : (
                 <span className="invisible text-[11px]">로딩</span>
               )}
@@ -418,7 +414,7 @@ function buildSectionsFromBulletin(b: BulletinData): WorshipSection[] {
 
 function WorshipOrderScreen({ bulletin, onGoIntro }: { bulletin: BulletinData | null; onGoIntro: () => void }) {
   const [activeIndex, setActiveIndex] = useState(0);
-  const [touchStartX, setTouchStartX] = useState<number | null>(null);
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
   const [fontScale, setFontScale] = useState(1);
 
   const sections = bulletin ? buildSectionsFromBulletin(bulletin) : defaultSections;
@@ -427,19 +423,27 @@ function WorshipOrderScreen({ bulletin, onGoIntro }: { bulletin: BulletinData | 
   const dateHeader = bulletin ? formatDateLabel(bulletin.date, bulletin.time) : "2026년 2월 1일 주일예배 · 오전 11시";
 
   const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
-    setTouchStartX(e.touches[0].clientX);
+    touchStartRef.current = {
+      x: e.touches[0].clientX,
+      y: e.touches[0].clientY,
+    };
   };
 
   const handleTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
-    if (touchStartX === null) return;
-    const delta = e.changedTouches[0].clientX - touchStartX;
-    const threshold = 40;
-    if (delta > threshold && activeIndex > 0) {
+    const start = touchStartRef.current;
+    touchStartRef.current = null;
+    if (!start) return;
+    const end = e.changedTouches[0];
+    const deltaX = end.clientX - start.x;
+    const deltaY = end.clientY - start.y;
+    const threshold = 36;
+    // 가로 이동이 세로보다 클 때만 탭 전환 (세로 스크롤과 구분)
+    if (Math.abs(deltaX) < Math.abs(deltaY) || Math.abs(deltaX) < threshold) return;
+    if (deltaX > threshold && activeIndex > 0) {
       setActiveIndex((prev) => prev - 1);
-    } else if (delta < -threshold && activeIndex < sections.length - 1) {
+    } else if (deltaX < -threshold && activeIndex < sections.length - 1) {
       setActiveIndex((prev) => prev + 1);
     }
-    setTouchStartX(null);
   };
 
   const decreaseFont = () => {
@@ -452,13 +456,13 @@ function WorshipOrderScreen({ bulletin, onGoIntro }: { bulletin: BulletinData | 
 
   return (
     <div
-      className="relative flex h-screen w-full items-center justify-center px-6 py-10 bg-cover bg-center"
+      className="relative flex min-h-[100dvh] h-[100dvh] max-h-[100dvh] w-full items-center justify-center px-4 py-4 sm:px-6 sm:py-10 bg-cover bg-center overflow-hidden"
       style={{ backgroundImage: `url(${backgroundImage})` }}
     >
       <div className="absolute inset-0 bg-gradient-to-b from-black/25 via-black/10 to-[#f7f1e6]/95 pointer-events-none" />
 
-      <div className="relative z-10 flex h-full w-full max-w-md flex-col bg-background/92 px-5 py-6 rounded-3xl border border-[#f5e1c4] shadow-lg">
-        <header className="mb-3">
+      <div className="relative z-10 flex h-full max-h-full w-full max-w-md flex-col min-h-0 bg-background/92 px-4 py-4 sm:px-5 sm:py-6 rounded-3xl border border-[#f5e1c4] shadow-lg overflow-hidden">
+        <header className="mb-3 shrink-0">
           <div className="flex items-start justify-between gap-3">
             <div>
               <div className="text-[11px] text-foreground/55">
@@ -530,7 +534,7 @@ function WorshipOrderScreen({ bulletin, onGoIntro }: { bulletin: BulletinData | 
         </header>
 
         <div
-          className="relative mt-4 flex-1 overflow-hidden rounded-2xl bg-[#fbf5eb]/95 border border-[#e5d6c0]"
+          className="relative mt-4 flex-1 min-h-0 overflow-hidden rounded-2xl bg-[#fbf5eb]/95 border border-[#e5d6c0]"
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
         >
@@ -541,7 +545,7 @@ function WorshipOrderScreen({ bulletin, onGoIntro }: { bulletin: BulletinData | 
             {sections.map((section) => (
               <section
                 key={section.id}
-                className="w-full shrink-0 px-5 py-6 flex flex-col gap-4 overflow-y-auto"
+                className="w-full shrink-0 min-h-full px-4 py-4 sm:px-5 sm:py-6 flex flex-col gap-4 overflow-y-auto touch-pan-y"
                 style={{ transform: `scale(${fontScale})`, transformOrigin: "top left" }}
               >
                 <h2 className="text-[12px] tracking-[0.28em] text-foreground/70 text-center">
@@ -553,7 +557,7 @@ function WorshipOrderScreen({ bulletin, onGoIntro }: { bulletin: BulletinData | 
           </div>
         </div>
 
-        <div className="mt-3 flex items-center justify-center gap-2 text-[11px] text-foreground/60">
+        <div className="mt-3 shrink-0 flex items-center justify-center gap-2 text-[11px] text-foreground/60">
           <span className="text-lg opacity-60">←</span>
           <span>옆으로 넘기며 예배 순서를 볼 수 있어요</span>
           <span className="text-lg opacity-60">→</span>
