@@ -1,26 +1,30 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* 부드러운 베이지 & 브라운 팔레트 */
+  --background: #f7f1e6;
+  --foreground: #3b2a20;
+  --accent: #c49a6c;
+  --muted: #e9dcc7;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --font-sans: var(--font-sans);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+}
+
+.card-soft {
+  @apply rounded-2xl bg-[#fbf5eb] shadow-sm border border-[#e5d6c0];
+}
+
+.button-ghost {
+  @apply text-xs text-foreground/60 underline underline-offset-4;
 }

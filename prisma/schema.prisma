@@ -1,0 +1,27 @@
+// 주보 웹 서비스 - PostgreSQL (Supabase 등). 로컬도 동일 URL 사용.
+// https://pris.ly/d/prisma-schema
+
+generator client {
+  provider   = "prisma-client-js"
+  engineType = "client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Bulletin {
+  id                String   @id @default(cuid())
+  date              String   @unique // YYYY-MM-DD
+  time              String   @default("11:00")
+  sermonTitleMain   String   @default("")
+  sermonTitleSub    String   @default("")
+  praises           String   @default("")
+  prayers           String   @default("")
+  passage           String   @default("")
+  sermonDescription String   @default("")
+  commitment        String   @default("")
+  announcements     String   @default("")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
