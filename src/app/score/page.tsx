@@ -40,15 +40,22 @@ function ScoreViewerContent() {
     isDraggingRef.current = false;
   };
 
-  const handleDragEnd = (x: number, y: number) => {
+  const handleDragEnd = (x: number, y: number, isTouch: boolean = false) => {
     const start = dragStartRef.current;
     dragStartRef.current = null;
-    if (!start || praiseCards.length <= 1 || !isDraggingRef.current) return;
+    if (!start || praiseCards.length <= 1) return;
+    
+    // 터치의 경우 isDraggingRef 체크 없이 바로 처리
+    if (!isTouch && !isDraggingRef.current) return;
+    
     const deltaX = x - start.x;
     const deltaY = y - start.y;
     const threshold = 50;
     // 가로 이동이 세로보다 클 때만 악보 전환 (세로 스크롤과 구분)
-    if (Math.abs(deltaX) < Math.abs(deltaY) || Math.abs(deltaX) < threshold) return;
+    if (Math.abs(deltaX) < Math.abs(deltaY) || Math.abs(deltaX) < threshold) {
+      isDraggingRef.current = false;
+      return;
+    }
     
     if (deltaX > threshold && currentIndex > 0) {
       const prevIndex = currentIndex - 1;
@@ -69,11 +76,30 @@ function ScoreViewerContent() {
   };
 
   const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    e.stopPropagation();
     handleDragStart(e.touches[0].clientX, e.touches[0].clientY);
   };
 
+  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (dragStartRef.current) {
+      const deltaX = Math.abs(e.touches[0].clientX - dragStartRef.current.x);
+      const deltaY = Math.abs(e.touches[0].clientY - dragStartRef.current.y);
+      // 가로 이동이 세로보다 크면 드래그로 인식
+      if (deltaX > 10 && deltaX > deltaY) {
+        isDraggingRef.current = true;
+        // 가로 드래그 중이면 스크롤 방지
+        if (deltaX > 30) {
+          e.preventDefault();
+        }
+      }
+    }
+  };
+
   const handleTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
-    handleDragEnd(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+    e.stopPropagation();
+    if (dragStartRef.current) {
+      handleDragEnd(e.changedTouches[0].clientX, e.changedTouches[0].clientY, true);
+    }
   };
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -118,7 +144,8 @@ function ScoreViewerContent() {
   return (
     <main 
       className="fixed inset-0 z-50 bg-black/98 flex flex-col select-none" 
-      onTouchStart={handleTouchStart} 
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
@@ -143,7 +170,7 @@ function ScoreViewerContent() {
           </div>
         )}
       </div>
-      <div className="flex-1 overflow-auto flex items-start justify-center p-4 pt-14 min-h-full">
+      <div className="flex-1 overflow-auto flex items-start justify-center p-4 pt-14 min-h-full touch-pan-y">
         <img
           src={currentUrl}
           alt={`찬양 악보 ${currentIndex + 1}`}
