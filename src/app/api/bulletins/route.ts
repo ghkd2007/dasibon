@@ -54,6 +54,7 @@ export async function POST(request: NextRequest) {
       announcements,
       introBackgroundUrl,
       youtubeUrl,
+      ogImageUrl,
     } = body;
 
     if (!date || typeof date !== "string") {
@@ -78,6 +79,7 @@ export async function POST(request: NextRequest) {
       announcements: announcements ?? "",
       introBackgroundUrl: introBackgroundUrl ?? null,
       youtubeUrl: youtubeUrl ?? null,
+      ogImageUrl: ogImageUrl ?? null,
     };
 
     const bulletin = await prisma.bulletin.upsert({
@@ -87,9 +89,11 @@ export async function POST(request: NextRequest) {
     });
     return NextResponse.json(bulletin);
   } catch (e) {
-    console.error("POST /api/bulletins", e);
+    const err = e as Error;
+    console.error("POST /api/bulletins", err);
+    const message = process.env.NODE_ENV === "development" ? err.message : "저장 중 오류가 발생했습니다.";
     return NextResponse.json(
-      { error: "저장 중 오류가 발생했습니다." },
+      { error: message },
       { status: 500 }
     );
   }

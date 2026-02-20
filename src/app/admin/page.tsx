@@ -2,7 +2,7 @@
 
 import { FormEvent, useEffect, useRef, useState } from "react";
 import RichTextEditor from "@/components/RichTextEditor";
-import ComposedInput from "@/components/ComposedInput";
+import ComposedInput, { ComposedTextarea } from "@/components/ComposedInput";
 import { useRouter } from "next/navigation";
 import { parsePraises, stringifyPraises, type PraiseCard } from "@/lib/praises";
 
@@ -23,6 +23,7 @@ type BulletinForm = {
   announcements: string;
   introBackgroundUrl: string;
   youtubeUrl: string;
+  ogImageUrl: string;
 };
 
 const defaultPrayers =
@@ -43,6 +44,7 @@ const emptyForm: BulletinForm = {
   announcements: "",
   introBackgroundUrl: "",
   youtubeUrl: "",
+  ogImageUrl: "",
 };
 
 type BulletinListItem = { date: string; sermonTitleMain: string; eventType?: string };
@@ -231,6 +233,7 @@ export default function AdminDashboardPage() {
           announcements: b.announcements ?? "",
           introBackgroundUrl: b.introBackgroundUrl ?? "",
           youtubeUrl: b.youtubeUrl ?? "",
+          ogImageUrl: b.ogImageUrl ?? "",
         });
       })
       .catch(() => {
@@ -406,14 +409,14 @@ export default function AdminDashboardPage() {
           <section className="grid grid-cols-2 gap-3 text-[13px]">
             <div>
               <label className="block mb-1 text-[12px] text-foreground/70">설교 제목 (메인)</label>
-              <div className="flex gap-2 items-center">
-                <ComposedInput
-                  type="text"
+              <div className="flex gap-2 items-start">
+                <ComposedTextarea
+                  rows={2}
                   value={form.sermonTitleMain}
                   onChange={(v) => setForm((prev) => ({ ...prev, sermonTitleMain: v }))}
-                  className="flex-1 rounded-md border border-[#e5d6c0] bg-white/90 px-3 py-2 text-[13px] outline-none focus:ring-2 focus:ring-[#c49a6c]/60"
+                  className="flex-1 min-w-0 rounded-md border border-[#e5d6c0] bg-white/90 px-3 py-2 text-[13px] outline-none focus:ring-2 focus:ring-[#c49a6c]/60 resize-y"
                 />
-                <label className="flex items-center gap-1 shrink-0" title="제목 글자 색">
+                <label className="flex items-center gap-1 shrink-0 pt-1" title="제목 글자 색">
                   <input
                     type="color"
                     value={form.sermonTitleMainColor}
@@ -425,14 +428,14 @@ export default function AdminDashboardPage() {
             </div>
             <div>
               <label className="block mb-1 text-[12px] text-foreground/70">설교 제목 (부제)</label>
-              <div className="flex gap-2 items-center">
-                <ComposedInput
-                  type="text"
+              <div className="flex gap-2 items-start">
+                <ComposedTextarea
+                  rows={2}
                   value={form.sermonTitleSub}
                   onChange={(v) => setForm((prev) => ({ ...prev, sermonTitleSub: v }))}
-                  className="flex-1 rounded-md border border-[#e5d6c0] bg-white/90 px-3 py-2 text-[13px] outline-none focus:ring-2 focus:ring-[#c49a6c]/60"
+                  className="flex-1 min-w-0 rounded-md border border-[#e5d6c0] bg-white/90 px-3 py-2 text-[13px] outline-none focus:ring-2 focus:ring-[#c49a6c]/60 resize-y"
                 />
-                <label className="flex items-center gap-1 shrink-0" title="부제 글자 색">
+                <label className="flex items-center gap-1 shrink-0 pt-1" title="부제 글자 색">
                   <input
                     type="color"
                     value={form.sermonTitleSubColor}
@@ -553,6 +556,66 @@ export default function AdminDashboardPage() {
                         fetch("/api/upload", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url: form.introBackgroundUrl }) }).catch(() => {});
                       }
                       setForm((prev) => ({ ...prev, introBackgroundUrl: "" }));
+                    }}
+                    className="text-[12px] text-red-600 underline"
+                  >
+                    제거
+                  </button>
+                </>
+              ) : null}
+            </div>
+          </section>
+
+          <section className="space-y-2 text-[13px]">
+            <label className="block text-[12px] text-foreground/70 font-medium">공유 이미지 (카카오톡 등 링크 미리보기)</label>
+            <p className="text-[12px] text-foreground/60">링크 공유 시 미리보기로 보일 이미지입니다. 비워두면 기본 정보만 표시됩니다.</p>
+            <div className="flex flex-wrap items-end gap-3">
+              <div className="relative">
+                <input
+                  type="file"
+                  accept="image/*"
+                  id="og-image-file"
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const formData = new FormData();
+                    formData.set("file", file);
+                    try {
+                      const res = await fetch("/api/upload", { method: "POST", body: formData });
+                      const data = await res.json();
+                      if (data?.url) {
+                        const prev = form.ogImageUrl;
+                        if (prev && (prev.startsWith("http") || prev.startsWith("/uploads"))) {
+                          fetch("/api/upload", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url: prev }) }).catch(() => {});
+                        }
+                        setForm((prev) => ({ ...prev, ogImageUrl: data.url }));
+                      }
+                    } catch {
+                      // ignore
+                    }
+                    e.target.value = "";
+                  }}
+                />
+                <label
+                  htmlFor="og-image-file"
+                  className="inline-block rounded-md border border-[#c49a6c] bg-[#fbf5eb] px-4 py-2 text-[13px] text-foreground/90 cursor-pointer hover:bg-[#f5ebe0]"
+                >
+                  이미지 선택
+                </label>
+              </div>
+              {form.ogImageUrl ? (
+                <>
+                  <div className="rounded-lg border border-[#e5d6c0] overflow-hidden w-24 h-24 bg-[#fbf5eb] shrink-0">
+                    <img src={form.ogImageUrl} alt="공유 미리보기" className="w-full h-full object-cover" />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (form.ogImageUrl.startsWith("http") || form.ogImageUrl.startsWith("/uploads")) {
+                        fetch("/api/upload", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ url: form.ogImageUrl }) }).catch(() => {});
+                      }
+                      setForm((prev) => ({ ...prev, ogImageUrl: "" }));
                     }}
                     className="text-[12px] text-red-600 underline"
                   >

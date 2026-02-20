@@ -127,20 +127,21 @@ export default function RichTextEditor({
             onChange={(e) => exec("foreColor", e.target.value)}
           />
         </label>
-        <button
-          type="button"
-          className="px-2 py-[1px] rounded-full border border-[#e0d0b8] bg-white/90 text-[10px]"
-          onClick={() => exec("fontSize", "2")}
-        >
-          A-
-        </button>
-        <button
-          type="button"
-          className="px-2 py-[1px] rounded-full border border-[#e0d0b8] bg-white/90 text-[10px]"
-          onClick={() => exec("fontSize", "4")}
-        >
-          A+
-        </button>
+        <label className="flex items-center gap-1 shrink-0" title="글자 크기 (1~7)">
+          <span className="text-[10px] text-foreground/50">크기</span>
+          <input
+            type="number"
+            min={1}
+            max={7}
+            defaultValue={3}
+            className="w-9 h-6 rounded border border-[#e0d0b8] bg-white/90 px-1 text-center text-[11px] [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+            onChange={(e) => {
+              const n = Math.min(7, Math.max(1, Number(e.target.value) || 3));
+              e.target.value = String(n);
+              exec("fontSize", String(n));
+            }}
+          />
+        </label>
         <button
           type="button"
           className="ml-auto px-2 py-[1px] rounded-full border border-transparent text-[10px] text-foreground/50 hover:border-[#e0d0b8]"

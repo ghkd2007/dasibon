@@ -27,6 +27,7 @@ model Bulletin {
   announcements     String   @default("")
   introBackgroundUrl String?  // 인트로 배경 이미지 URL
   youtubeUrl         String?  // 인트로 유튜브 버튼 링크
+  ogImageUrl         String?  // 공유 시 미리보기 이미지 (og:image)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 }
