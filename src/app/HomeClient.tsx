@@ -2,7 +2,7 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useRef, useState } from "react";
-import { parsePraises } from "@/lib/praises";
+import { parsePraises, type PraiseCard } from "@/lib/praises";
 
 type IntroStage = "intro" | "order";
 
@@ -114,26 +114,67 @@ function HomeContent() {
   }, [searchParams]);
 
   useEffect(() => {
+    // sessionStorage에서 캐시된 데이터 확인
+    const cacheKey = dateParam ? `bulletin-${dateParam}` : "bulletin-latest";
+    const cached = sessionStorage.getItem(cacheKey);
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        if (parsed && parsed.date) {
+          setBulletin(parsed);
+          setDataReady(true);
+          // 캐시된 데이터를 사용하되, 백그라운드에서 최신 데이터 확인
+          if (dateParam) {
+            fetch(`/api/bulletins?date=${encodeURIComponent(dateParam)}`)
+              .then((res) => res.json())
+              .then((b) => {
+                if (b && b.date) {
+                  setBulletin(b);
+                  sessionStorage.setItem(cacheKey, JSON.stringify(b));
+                }
+              })
+              .catch(() => {});
+          }
+          return;
+        }
+      } catch {
+        // 캐시 파싱 실패 시 무시
+      }
+    }
+
+    // 캐시가 없으면 데이터 로드
     if (dateParam) {
       fetch(`/api/bulletins?date=${encodeURIComponent(dateParam)}`)
         .then((res) => res.json())
-        .then((b) => (b && b.date ? setBulletin(b) : setBulletin(null)))
+        .then((b) => {
+          if (b && b.date) {
+            setBulletin(b);
+            sessionStorage.setItem(cacheKey, JSON.stringify(b));
+          } else {
+            setBulletin(null);
+          }
+        })
         .catch(() => setBulletin(null))
         .finally(() => setDataReady(true));
       return;
     }
+    
+    // 최신 주보 로드
     fetch("/api/bulletins")
       .then((res) => res.json())
       .then((list: { date: string }[]) => {
         if (!Array.isArray(list) || list.length === 0) {
           setDataReady(true);
-          return;
+          return null;
         }
         const latest = list[0];
         return fetch(`/api/bulletins?date=${encodeURIComponent(latest.date)}`).then((r) => r.json());
       })
       .then((b) => {
-        if (b && b.date) setBulletin(b);
+        if (b && b.date) {
+          setBulletin(b);
+          sessionStorage.setItem(cacheKey, JSON.stringify(b));
+        }
         setDataReady(true);
       })
       .catch(() => setDataReady(true));
@@ -352,7 +393,7 @@ function buildSectionsFromBulletin(b: BulletinData): WorshipSection[] {
       {praiseCards.map((card, i) => (
         <li key={i}>
           {card.imageUrl ? (
-            <a href={`/score?url=${encodeURIComponent(card.imageUrl)}`} className="block rounded-xl border border-[#e5d6c0] bg-[#fbf5eb]/95 p-4 text-[15px] font-medium text-foreground shadow-sm hover:bg-[#f5ebe0] active:scale-[0.99] transition">
+            <a href={`/score?url=${encodeURIComponent(card.imageUrl)}&index=${i}&date=${encodeURIComponent(b.date)}`} className="block rounded-xl border border-[#e5d6c0] bg-[#fbf5eb]/95 p-4 text-[15px] font-medium text-foreground shadow-sm hover:bg-[#f5ebe0] active:scale-[0.99] transition">
               <span className="block">{card.title || "찬양"}</span>
             </a>
           ) : (
