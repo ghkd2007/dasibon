@@ -17,6 +17,33 @@ function getPathFromPublicUrl(url: string): string | null {
 
 export async function POST(request: NextRequest) {
   try {
+    // Vercel 등 배포 환경에서는 Supabase Storage 필수 (로컬 디스크 불가)
+    if (!supabaseAdmin) {
+      if (process.env.VERCEL) {
+        return NextResponse.json(
+          {
+            error:
+              "스토리지가 설정되지 않았습니다. Vercel 환경 변수에 NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY를 추가하고, Supabase Storage에 'uploads' 버킷(공개)을 만든 뒤 다시 배포해 주세요.",
+          },
+          { status: 503 }
+        );
+      }
+      // 로컬 전용: public/uploads 폴더에 저장
+      const formData = await request.formData();
+      const file = formData.get("file") as File | null;
+      if (!file || !(file instanceof File)) {
+        return NextResponse.json({ error: "파일이 없습니다." }, { status: 400 });
+      }
+      const bytes = await file.arrayBuffer();
+      const buffer = Buffer.from(bytes);
+      const ext = path.extname(file.name) || ".jpg";
+      const safeName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}${ext}`;
+      await mkdir(FALLBACK_UPLOAD_DIR, { recursive: true });
+      const filePath = path.join(FALLBACK_UPLOAD_DIR, safeName);
+      await writeFile(filePath, buffer);
+      return NextResponse.json({ url: `/uploads/${safeName}` });
+    }
+
     const formData = await request.formData();
     const file = formData.get("file") as File | null;
     if (!file || !(file instanceof File)) {
@@ -27,22 +54,19 @@ export async function POST(request: NextRequest) {
     const ext = path.extname(file.name) || ".jpg";
     const safeName = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}${ext}`;
 
-    if (supabaseAdmin) {
-      const { data, error } = await supabaseAdmin.storage
-        .from(STORAGE_BUCKET)
-        .upload(safeName, buffer, { contentType: file.type || "image/jpeg", upsert: false });
-      if (error) {
-        console.error("Supabase upload error", error);
-        return NextResponse.json({ error: error.message || "업로드 실패" }, { status: 500 });
-      }
-      const publicUrl = getStoragePublicUrl(data.path);
-      return NextResponse.json({ url: publicUrl });
-    }
+    const { data, error } = await supabaseAdmin.storage
+      .from(STORAGE_BUCKET)
+      .upload(safeName, buffer, { contentType: file.type || "image/jpeg", upsert: false });
 
-    await mkdir(FALLBACK_UPLOAD_DIR, { recursive: true });
-    const filePath = path.join(FALLBACK_UPLOAD_DIR, safeName);
-    await writeFile(filePath, buffer);
-    return NextResponse.json({ url: `/uploads/${safeName}` });
+    if (error) {
+      console.error("Supabase upload error", error);
+      return NextResponse.json(
+        { error: error.message || "Supabase 업로드 실패. Storage 버킷 'uploads'가 있고 공개(Public)인지 확인해 주세요." },
+        { status: 500 }
+      );
+    }
+    const publicUrl = getStoragePublicUrl(data.path);
+    return NextResponse.json({ url: publicUrl });
   } catch (e) {
     console.error("Upload error", e);
     return NextResponse.json({ error: "업로드 실패" }, { status: 500 });
