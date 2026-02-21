@@ -222,9 +222,9 @@ function IntroScreen({ onGoOrder, bulletin }: IntroScreenProps) {
 
   const backgroundImage = bulletin?.introBackgroundUrl || "/intro-background.png";
   const dateLabel = bulletin ? formatDateLabel(bulletin.date, bulletin.time) : defaultDateLabel;
-  const sermonTitleMain = bulletin?.sermonTitleMain || defaultSermonMain;
+  const sermonTitleMain = bulletin?.sermonTitleMain?.trim() || defaultSermonMain;
   const sermonTitleMainColor = bulletin?.sermonTitleMainColor ?? undefined;
-  const sermonTitleSub = bulletin?.sermonTitleSub ?? defaultSermonSub;
+  const sermonTitleSub = bulletin?.sermonTitleSub?.trim() ?? defaultSermonSub;
   const sermonTitleSubColor = bulletin?.sermonTitleSubColor ?? undefined;
   const currentDate = bulletin?.date ?? (dateList[0]?.date ?? "");
 
@@ -400,11 +400,15 @@ function buildSectionsFromBulletin(b: BulletinData): WorshipSection[] {
       ))}
     </ul>
   ) : html(b.praises);
+  const desc = b.sermonDescription?.trim();
+  const sermonBody = desc ? html(desc) : (
+    <p className="text-[15px] leading-6 text-muted-foreground">나눔 질문을 입력해 주세요.</p>
+  );
   return [
     { id: "praises", label: "찬양", title: "[찬양]", body: praisesBody },
     { id: "prayers", label: "주기도문", title: "[주기도문]", body: html(b.prayers) },
     { id: "passage", label: "말씀", title: "[말씀]", body: html(b.passage || "—") },
-    { id: "sermon", label: "나눔 질문", title: "[나눔 질문]", body: (<div className="space-y-2 text-[15px] leading-6">{b.sermonTitleMain && <p className="font-medium whitespace-pre-line" style={b.sermonTitleMainColor ? { color: b.sermonTitleMainColor } : undefined}>{b.sermonTitleMain}</p>}{b.sermonTitleSub && <p className="text-foreground/80 whitespace-pre-line" style={b.sermonTitleSubColor ? { color: b.sermonTitleSubColor } : undefined}>{b.sermonTitleSub}</p>}{b.sermonDescription && html(b.sermonDescription)}</div>) },
+    { id: "sermon", label: "나눔 질문", title: "[나눔 질문]", body: sermonBody },
     { id: "announcements", label: "광고", title: "[광고]", body: html(b.announcements || "—") },
   ];
 }
