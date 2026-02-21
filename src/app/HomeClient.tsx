@@ -109,10 +109,7 @@ function HomeContent() {
   const [bulletin, setBulletin] = useState<BulletinData | null>(null);
   const [dataReady, setDataReady] = useState(false);
 
-  useEffect(() => {
-    if (searchParams.get("view") === "order") setStage("order");
-  }, [searchParams]);
-
+  // URL의 view=order는 적용하지 않음. 항상 로딩 후에는 홈(인트로) 화면에 머물고, 사용자가 탭하면 찬양 탭으로 이동
   useEffect(() => {
     // sessionStorage에서 캐시된 데이터 확인
     const cacheKey = dateParam ? `bulletin-${dateParam}` : "bulletin-latest";
